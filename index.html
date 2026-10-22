@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TypeQuest - Learn to Type Fast</title>
+<style>
+:root{
+  --bg:#0b1020; --panel:#141b33; --panel2:#1a2342; --line:#2a3560;
+  --text:#e8ecf8; --dim:#9aa5c7; --accent:#22d3ee; --accent2:#a78bfa;
+  --good:#4ade80; --bad:#f87171; --warn:#fbbf24;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{background:radial-gradient(1200px 600px at 50% -10%, #1b2450 0%, var(--bg) 60%);
+  color:var(--text); font-family:"Segoe UI", system-ui, -apple-system, sans-serif;
+  min-height:100vh; padding-bottom:60px;}
+header{max-width:1000px; margin:0 auto; padding:18px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+.logo{font-size:26px; font-weight:800; letter-spacing:1px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;}
+.logo small{display:block; font-size:11px; font-weight:400; color:var(--dim); letter-spacing:2px;}
+.profilebox{margin-left:auto; display:flex; align-items:center; gap:10px; background:var(--panel);
+  border:1px solid var(--line); border-radius:12px; padding:8px 12px;}
+.profilebox select{background:var(--panel2); color:var(--text); border:1px solid var(--line);
+  border-radius:8px; padding:6px 10px; font-size:15px;}
+.xpwrap{display:flex; align-items:center; gap:8px;}
+.xpbar{width:140px; height:10px; background:#0a0e1f; border-radius:6px; overflow:hidden; border:1px solid var(--line);}
+.xpfill{height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); width:0%; transition:width .5s;}
+.rank{font-size:13px; color:var(--warn); font-weight:700;}
+.streak{font-size:14px; color:var(--dim);}
+nav{max-width:1000px; margin:0 auto; padding:0 20px; display:flex; gap:8px;}
+nav button{flex:1; padding:12px; font-size:16px; font-weight:700; background:var(--panel);
+  color:var(--dim); border:1px solid var(--line); border-radius:12px 12px 0 0; cursor:pointer;}
+nav button.active{background:var(--panel2); color:var(--text); border-bottom:2px solid var(--accent);}
+main{max-width:1000px; margin:0 auto; padding:20px; background:var(--panel);
+  border:1px solid var(--line); border-top:none; border-radius:0 0 16px 16px; min-height:480px;}
+.tab{display:none;} .tab.active{display:block;}
+h2{margin-bottom:6px;} .sub{color:var(--dim); margin-bottom:16px; font-size:14px;}
+.lesson-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;}
+.lesson{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:14px; cursor:pointer; transition:transform .12s;}
+.lesson:hover:not(.locked){transform:translateY(-2px); border-color:var(--accent);}
+.lesson.locked{opacity:.45; cursor:not-allowed;}
+.lesson .num{font-size:12px; color:var(--accent); font-weight:700;}
+.lesson h3{margin:4px 0 6px; font-size:16px;}
+.lesson p{font-size:13px; color:var(--dim); min-height:36px;}
+.lesson .meta{font-size:12px; color:var(--dim); margin-top:8px;}
+.lesson .done{color:var(--good); font-weight:700;}
+#runner{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:18px; margin-top:6px;}
+#runner h3{margin-bottom:4px;} #runner .tip{color:var(--dim); font-size:14px; margin-bottom:12px;}
+#target, #sprinttarget{font-family:"Consolas","Courier New",monospace; font-size:22px; line-height:1.9;
+  background:#0a0e1f; border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:12px;
+  user-select:none; min-height:120px;}
+#target .cur, #sprinttarget .cur{background:rgba(34,211,238,.25); border-radius:4px;}
+#target .ok, #sprinttarget .ok{color:var(--good);}
+#target .err, #sprinttarget .err{color:var(--bad); background:rgba(248,113,113,.15); border-radius:4px;}
+#target .todo, #sprinttarget .todo{color:#5b6580;}
+.hud{display:flex; gap:18px; margin-bottom:12px; font-size:15px; color:var(--dim);}
+.hud b{color:var(--text); font-size:18px;}
+#kbd{margin:14px auto 4px; max-width:720px; user-select:none;}
+.krow{display:flex; gap:5px; justify-content:center; margin-bottom:5px;}
+.key{min-width:44px; height:44px; display:flex; align-items:center; justify-content:center;
+  background:#0a0e1f; border:1px solid var(--line); border-radius:7px; font-size:14px; font-weight:600;
+  color:var(--text); position:relative; transition:transform .06s;}
+.key.wide{min-width:70px;} .key.space{min-width:280px;}
+.key.next{outline:2px solid #fff; transform:scale(1.12); z-index:2;}
+.key .fdot{position:absolute; bottom:3px; width:6px; height:6px; border-radius:50%;}
+#results{margin-top:14px; padding:14px; border-radius:10px; background:#0a0e1f; border:1px solid var(--line); display:none;}
+#results.pass{border-color:var(--good);} #results.fail{border-color:var(--bad);}
+#results h4{font-size:18px; margin-bottom:6px;}
+.btn{display:inline-block; margin:8px 8px 0 0; padding:10px 18px; font-size:15px; font-weight:700;
+  border:none; border-radius:10px; cursor:pointer;
+  background:linear-gradient(90deg,var(--accent),var(--accent2)); color:#06121f;}
+.btn.ghost{background:var(--panel); color:var(--text); border:1px solid var(--line);}
+.game-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px;}
+.game{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:16px;}
+.game h3{margin-bottom:6px;} .game p{font-size:13px; color:var(--dim); margin-bottom:10px; min-height:54px;}
+#gamearea{background:#0a0e1f; border:1px solid var(--line); border-radius:12px; padding:18px; margin-top:14px; display:none; position:relative; overflow:hidden;}
+#rainbox{position:relative; height:340px; background:#070b18; border-radius:8px; overflow:hidden; margin-bottom:10px;}
+.fword{position:absolute; font-family:monospace; font-size:20px; font-weight:700; color:var(--text);
+  background:rgba(20,27,51,.9); border:1px solid var(--accent); padding:4px 10px; border-radius:8px; white-space:nowrap;}
+.fword .typed{color:var(--accent);}
+#rainhud{display:flex; gap:20px; font-size:15px; color:var(--dim); margin-bottom:8px;}
+#rainhud b{color:var(--text);}
+.stat-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-bottom:18px;}
+.stat{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:14px; text-align:center;}
+.stat .v{font-size:26px; font-weight:800; color:var(--accent);}
+.stat .l{font-size:12px; color:var(--dim); margin-top:4px;}
+#weakkeys{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 16px;}
+.wkey{background:#0a0e1f; border:1px solid var(--bad); color:var(--text); border-radius:8px;
+  padding:8px 12px; font-family:monospace; font-size:16px; font-weight:700;}
+details.howto{max-width:1000px; margin:18px auto 0; padding:0 20px; color:var(--dim); font-size:14px;}
+details.howto summary{cursor:pointer; color:var(--text); font-weight:700; margin-bottom:8px;}
+details.howto li{margin:6px 0 6px 18px;}
+.flash{animation:flash .5s;}
+@keyframes flash{0%{transform:scale(1);}40%{transform:scale(1.06);}100%{transform:scale(1);}}
+@media (max-width:640px){
+  #target, #sprinttarget{font-size:18px;} .key{min-width:32px; height:38px; font-size:12px;} .key.space{min-width:180px;}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">TYPEQUEST<small>TYPE LIKE YOU MEAN IT</small></div>
+  <div class="profilebox">
+    <span class="streak" id="streak">🔥 0</span>
+    <select id="profile" aria-label="Profile"></select>
+    <div class="xpwrap"><div><div class="rank" id="rank">Key Rookie</div>
+      <div class="xpbar"><div class="xpfill" id="xpfill"></div></div></div>
+      <span id="xptext" style="font-size:12px;color:var(--dim)">0 XP</span>
+    </div>
+  </div>
+</header>
+<nav>
+  <button data-tab="lessons" class="active">📚 Lessons</button>
+  <button data-tab="games" class="">🎮 Games</button>
+  <button data-tab="stats" class="">📊 My Stats</button>
+</nav>
+<main>
+  <section id="tab-lessons" class="tab active">
+    <h2>Typing Dojo</h2>
+    <div class="sub">One new set of keys at a time. Score 92% accuracy or better to unlock the next lesson. Speed comes later, accuracy comes first.</div>
+    <div class="lesson-grid" id="lessongrid"></div>
+    <div id="runner" style="display:none">
+      <h3 id="runtitle"></h3>
+      <div class="tip" id="runtip"></div>
+      <div id="target" tabindex="0"></div>
+      <div class="hud">
+        <span>WPM <b id="hudwpm">0</b></span>
+        <span>Accuracy <b id="hudacc">100%</b></span>
+        <span>Progress <b id="hudprog">0%</b></span>
+        <span style="margin-left:auto" id="hudhint">Click the text, then type. Backspace fixes mistakes.</span>
+      </div>
+      <div id="kbd"></div>
+      <div id="results"></div>
+      <div>
+        <button class="btn ghost" id="btnquit">← Back to lessons</button>
+        <button class="btn" id="btnretry" style="display:none">Retry</button>
+        <button class="btn" id="btnnext" style="display:none">Next lesson →</button>
+      </div>
+    </div>
+  </section>
+  <section id="tab-games" class="tab">
+    <h2>Arcade</h2>
+    <div class="sub">Games build the same muscle memory as drills, but they feel like play. Your lesson accuracy matters here too.</div>
+    <div class="game-grid">
+      <div class="game"><h3>🌧️ Word Rain</h3>
+        <p>Words fall from the sky. Type each word before it hits the ground. Three misses and the storm wins.</p>
+        <button class="btn" data-speed="drizzle">Drizzle (slow)</button>
+        <button class="btn" data-speed="rain">Rain</button>
+        <button class="btn" data-speed="storm">Storm (fast)</button>
+        <div class="meta" id="bestrain" style="margin-top:8px;font-size:13px;color:var(--dim)"></div>
+      </div>
+      <div class="game"><h3>⏱️ 60-Second Sprint</h3>
+        <p>Sixty seconds, one stream of common words. How fast can you go without wrecking your accuracy?</p>
+        <button class="btn" id="btnsprint">Start sprint</button>
+        <div class="meta" id="bestsprint" style="margin-top:8px;font-size:13px;color:var(--dim)"></div>
+      </div>
+      <div class="game"><h3>🎯 Weak-Key Drill</h3>
+        <p>The site tracks every key you miss and builds a custom drill from your weakest keys. This is the fastest way to improve.</p>
+        <button class="btn" id="btnweak">Drill my weak keys</button>
+      </div>
+    </div>
+    <div id="gamearea">
+      <div id="rainhud" style="display:none">
+        <span>Score <b id="rainscore">0</b></span><span>Lives <b id="rainlives">❤❤❤</b></span>
+        <span>WPM <b id="rainwpm">0</b></span><span style="margin-left:auto">Type the lowest word. Wrong keys flash, no penalty.</span>
+      </div>
+      <div id="rainbox" style="display:none"></div>
+      <div id="sprintbox" style="display:none">
+        <div class="hud"><span>Time <b id="sprinttime">60</b>s</span><span>WPM <b id="sprintwpm">0</b></span><span>Accuracy <b id="sprintacc">100%</b></span></div>
+        <div id="sprinttarget" tabindex="0" style="min-height:150px"></div>
+      </div>
+      <div style="margin-top:10px"><button class="btn ghost" id="btngamequit">← Back to games</button></div>
+      <div id="gameresults" style="margin-top:10px"></div>
+    </div>
+  </section>
+  <section id="tab-stats" class="tab">
+    <h2>My Stats</h2>
+    <div class="sub">Retest yourself here, not every day. Real progress shows up week to week.</div>
+    <div class="stat-grid" id="statgrid"></div>
+    <h3 style="margin:14px 0 4px">Keys that need work</h3>
+    <div class="sub">Your five least accurate keys. Drill them above in Games.</div>
+    <div id="weakkeys"></div>
+    <h3 style="margin:14px 0 8px">Key accuracy map</h3>
+    <div id="kbdstats"></div>
+  </section>
+</main>
+<details class="howto">
+  <summary>How TypeQuest teaches (the method behind it)</summary>
+  <ul>
+    <li><b>Home row first, one key set at a time.</b> Every lesson adds a small set of keys and nothing else until those feel automatic.</li>
+    <li><b>Accuracy before speed.</b> Each lesson needs 92% accuracy to pass. Fast typing built on errors has to be unlearned later.</li>
+    <li><b>Eyes on the screen.</b> The on-screen keyboard lights up the next key and its finger, so you stop looking down.</li>
+    <li><b>Short sessions beat marathons.</b> Typing is a motor skill like an instrument. 10 to 15 minutes a day beats one long weekly session.</li>
+    <li><b>Your misses shape your practice.</b> Every keystroke is tracked. The weak-key drill serves you the exact keys you keep missing.</li>
+    <li><b>Real words early.</b> Drills use real words and sentences as soon as possible, because that is what your hands will actually type.</li>
+    <li><b>Play counts as practice.</b> The arcade games drill the same patterns as the lessons, with scoring and streaks to keep you coming back.</li>
+  </ul>
+</details>
+<script>
+"use strict";
+
+/* ============ DATA ============ */
+const FINGERS = {
+  lp:{name:"Left pinky", color:"#f472b6"}, lr:{name:"Left ring", color:"#fb923c"},
+  lm:{name:"Left middle", color:"#facc15"}, li:{name:"Left index", color:"#4ade80"},
+  ri:{name:"Right index", color:"#22d3ee"}, rm:{name:"Right middle", color:"#818cf8"},
+  rr:{name:"Right ring", color:"#c084fc"}, rp:{name:"Right pinky", color:"#f87171"},
+  th:{name:"Thumb", color:"#94a3b8"}
+};
+const KEYFINGER = {
+  "`":"lp","1":"lp","q":"lp","a":"lp","z":"lp",
+  "2":"lr","w":"lr","s":"lr","x":"lr",
+  "3":"lm","e":"lm","d":"lm","c":"lm",
+  "4":"li","5":"li","r":"li","t":"li","f":"li","g":"li","v":"li","b":"li",
+  "6":"ri","7":"ri","y":"ri","u":"ri","h":"ri","j":"ri","n":"ri","m":"ri",
+  "8":"rm","i":"rm","k":"rm",",":"rm",
+  "9":"rr","o":"rr","l":"rr",".":"rr",
+  "0":"rp","-":"rp","=":"rp","p":"rp","[":"rp","]":"rp",";":"rp","'":"rp","/":"rp",
+  " ":"th"
+};
+const KBROWS = [
+  ["`","1","2","3","4","5","6","7","8","9","0","-","=","⌫"],
+  ["⇥","q","w","e","r","t","y","u","i","o","p","[","]","\\"],
+  ["⇪","a","s","d","f","g","h","j","k","l",";","'","⏎"],
+  ["⇧","z","x","c","v","b","n","m",",",".","/","⇧"],
+  [" "]
+];
+const RANKS = ["Key Rookie","Home Row Hero","Finger Ninja","Word Warrior","Touch Typer",
+  "Keyboard Knight","Speed Demon","Type Master","Keyboard Legend"];
+function rankFor(xp){ return RANKS[Math.min(RANKS.length-1, Math.floor(xp/600))]; }
+
+const COMMON = ("the of and to in is you that it he was for on are as with his they i at be this have from or one had by word but not what all were we when your can said there use an each which she do how their if will up other about out many then them these so some her would make like him into time has look two more write go see number no way could people my than first water been call who oil its now find long down day did get come made may part over new sound take only little work know place year live me back give most very after thing our just name good sentence man think say great where help through much before line right too mean old any same tell boy follow came want show also around form three small set put end does another well large must big even such because turn here why ask went men read need land different home us move try kind hand picture again change off play spell air away animal house point page letter mother answer found study still learn should america world high every near add food between own below country plant last school father keep tree never start city earth eye light thought head under story saw left few while along might close something seem next hard open example begin life always those both paper together got group often run important until children side feet car mile night walk white sea began grow took river four carry state once book hear stop without second late miss idea enough eat face watch far india real almost let above girl sometimes mountain cut young talk soon list song being leave family").split(" ");
+
+const HOMEWORDS = ["as","ask","all","lad","lass","dad","sad","fad","had","fall","hall","flask","salad","salsa","shall","add","alfalfa","flash","slash","glass","lasso","a","ad","as","has","had","lad","sad"];
+const TOPLEFT = ["the","red","tree","treat","tear","rat","rate","far","after","fatter","deer","reed","free","fleet","tread","trade","date","data","dear","read","teeth","feet","retreat","add"];
+const TOPRIGHT = ["you","oil","pour","tour","trip","power","quit","quite","pilot","point","puppy","poppy","your","hour","loop","pool","tool","tulip","uphold","output","youth","pup","top","toy"];
+const BOTTOM = ["van","cab","back","man","men","can","vex","mix","box","zebra","buzz","jazz","maze","cabin","vivid","navy","zinc","vixen","max","exam","vacuum","banana","amaze","blaze"];
+const SENTENCES = [
+  "The quick brown fox jumps over the lazy dog.",
+  "Honey never spoils. Jars found in ancient tombs were still edible.",
+  "A group of flamingos is called a flamboyance.",
+  "Why do programmers prefer dark mode? Because light attracts bugs.",
+  "Octopuses have three hearts and blue blood.",
+  "The first oranges were not orange. They were green.",
+  "Sharks existed before trees. Let that sink in.",
+  "Bananas are berries, but strawberries are not.",
+  "Your brain runs on about twenty watts. That is barely a light bulb.",
+  "There are more possible chess games than atoms in the universe.",
+  "Wombat poop is cube shaped. Scientists are still puzzled.",
+  "The Eiffel Tower grows about six inches taller in summer.",
+  "Hot water can freeze faster than cold water. It is called the Mpemba effect.",
+  "A day on Venus is longer than its year.",
+  "Sea otters hold hands while they sleep so they do not drift apart.",
+  "The inventor of the Pringles can is buried in one.",
+  "Cleopatra lived closer to the iPhone than to the pyramids.",
+  "Scotland's national animal is the unicorn.",
+  "You cannot hum while holding your nose closed.",
+  "The dot over the letters i and j has a name. It is called a tittle."
+];
+const NUMBERTEXTS = [
+  "The game starts at 7 and ends at 9. Bring 2 friends and 4 snacks.",
+  "In 1969, Apollo 11 landed on the moon. It was mission number 11.",
+  "The score was 24 to 17 with 3 minutes left in the 4th quarter.",
+  "My locker combo is 12 34 56. Do not tell anyone.",
+  "There are 365 days in a year and 24 hours in a day.",
+  "The library has 5 floors, 200 computers, and 90000 books.",
+  "Practice 15 minutes a day for 30 days and watch what happens.",
+  "The recipe needs 2 cups of flour, 3 eggs, and 1 stick of butter."
+];
+
+const LESSONS = [
+  {id:"l1", n:1, title:"Home Base", desc:"The home row: A S D F J K L ;",
+   tip:"Rest your fingers on the home row. Left hand: A S D F. Right hand: J K L ;. Feel the little bumps on F and J. After every key, come back home.",
+   gen:()=>drillText("asdfjkl;", 90)+" "+pickWords(HOMEWORDS, 14)},
+  {id:"l2", n:2, title:"Top Row, Left Hand", desc:"Add E R T",
+   tip:"E is left middle finger up, R is left index up, T is left index up and over. Keep your eyes on the screen, not your hands.",
+   gen:()=>pickWords(TOPLEFT, 26)},
+  {id:"l3", n:3, title:"Top Row, Right Hand", desc:"Add U I O P",
+   tip:"U and I are right index and middle up. O is right ring up, P is right pinky up. Pinkies are weak, be patient with them.",
+   gen:()=>pickWords(TOPRIGHT, 26)},
+  {id:"l4", n:4, title:"Bottom Row", desc:"Add Z X C V B N M",
+   tip:"Drop down from home row: left hand takes Z X C V, right hand takes B N M. Short reach, then straight back home.",
+   gen:()=>pickWords(BOTTOM, 26)},
+  {id:"l5", n:5, title:"Real Words", desc:"The most common English words",
+   tip:"Now it is all real words, the ones you will actually type every day. Smooth and steady wins. Do not rush.",
+   gen:()=>pickWords(COMMON, 40)},
+  {id:"l6", n:6, title:"Shift Happens", desc:"Capitals with the opposite Shift",
+   tip:"Capital letter on the left? Right Shift. On the right? Left Shift. Never the same-side Shift. Names to practice: James Isabella Lafayette Indiana Purdue.",
+   gen:()=>capWords(30)},
+  {id:"l7", n:7, title:"Say It In Sentences", desc:"Punctuation and real sentences",
+   tip:"Period is right ring finger down. Comma is right middle down. Keep a steady rhythm like a slow drum beat.",
+   gen:()=>pickSentences(4)},
+  {id:"l8", n:8, title:"Number Row", desc:"Digits 0-9",
+   tip:"Numbers are a straight reach up from home row. 1 is left pinky up, 5 is left index up-over, 0 is right pinky up.",
+   gen:()=>pickSentencesFrom(NUMBERTEXTS, 3)},
+  {id:"l9", n:9, title:"Speed Builder", desc:"Longer runs of common words",
+   tip:"You know every key now. This one is about flow. Stay above 92 percent and let your hands find their rhythm.",
+   gen:()=>pickWords(COMMON, 70)},
+  {id:"l10", n:10, title:"Final Boss", desc:"Everything at once",
+   tip:"Capitals, numbers, punctuation, the works. Type it like you are writing it for real. Finish this and you are a touch typist.",
+   gen:()=>pickSentences(5)+" "+pickSentencesFrom(NUMBERTEXTS, 1)}
+];
+function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
+function pickWords(list, n){ const o=[]; for(let i=0;i<n;i++) o.push(rnd(list)); return o.join(" "); }
+function pickSentences(n){ const c=[...SENTENCES]; const o=[]; for(let i=0;i<n && c.length;i++){ o.push(c.splice(Math.floor(Math.random()*c.length),1)[0]); } return o.join(" "); }
+function pickSentencesFrom(list, n){ const c=[...list]; const o=[]; for(let i=0;i<n && c.length;i++){ o.push(c.splice(Math.floor(Math.random()*c.length),1)[0]); } return o.join(" "); }
+function drillText(chars, n){ let o=""; for(let i=0;i<n;i++){ o += chars[Math.floor(Math.random()*chars.length)] + (i%4===3?" ":""); } return o.trim(); }
+function capWords(n){ const o=[]; for(let i=0;i<n;i++){ const w=rnd(COMMON); o.push(w.charAt(0).toUpperCase()+w.slice(1)); } return o.join(" "); }
+
+/* ============ STATE ============ */
+const store = {
+  load(){ try{ return JSON.parse(localStorage.getItem("tq_v1")) || null; }catch(e){ return null; } },
+  save(s){ localStorage.setItem("tq_v1", JSON.stringify(s)); }
+};
+function blankProfile(){ return {xp:0, lessons:{}, bestRain:0, bestSprint:null, keys:{}, streak:{last:"",count:0}, days:{}}; }
+let S = store.load() || {profiles:{James:blankProfile(), Isabella:blankProfile()}, cur:"James"};
+if(!S.profiles.James) S.profiles.James = blankProfile();
+if(!S.profiles.Isabella) S.profiles.Isabella = blankProfile();
+function P(){ return S.profiles[S.cur]; }
+function save(){ store.save(S); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function touchDay(){
+  const p=P(), t=todayStr();
+  p.days[t]=(p.days[t]||0);
+  if(p.streak.last!==t){
+    const y=new Date(Date.now()-864e5).toISOString().slice(0,10);
+    p.streak.count = (p.streak.last===y)? p.streak.count+1 : 1;
+    p.streak.last=t;
+  }
+  save(); renderHeader();
+}
+function addMinutes(m){
+  const p=P(), t=todayStr();
+  p.days[t]=Math.round(((p.days[t]||0)+m)*10)/10;
+  save();
+}
+function addXP(n){
+  const p=P(); const before=rankFor(p.xp);
+  p.xp+=n; const after=rankFor(p.xp);
+  save(); renderHeader();
+  if(before!==after){ toast("🏆 Rank up! You are now "+after); }
+}
+function recordKey(ch, ok){
+  ch=ch.toLowerCase();
+  if(!KEYFINGER[ch] && ch!==" ") return;
+  const k=P().keys[ch]||(P().keys[ch]={hit:0,miss:0});
+  if(ok) k.hit++; else k.miss++;
+}
+function weakKeys(n){
+  const out=[];
+  for(const ch in P().keys){ const k=P().keys[ch]; const tot=k.hit+k.miss;
+    if(tot>=8) out.push({ch, acc:k.hit/tot, tot}); }
+  out.sort((a,b)=>a.acc-b.acc);
+  return out.slice(0,n||5);
+}
+
+/* ============ HEADER / TABS ============ */
+function renderHeader(){
+  const sel=document.getElementById("profile");
+  sel.innerHTML="";
+  for(const name in S.profiles){ const o=document.createElement("option"); o.value=name; o.textContent=name; if(name===S.cur) o.selected=true; sel.appendChild(o); }
+  const p=P(), lvl=Math.floor(p.xp/600);
+  document.getElementById("rank").textContent=rankFor(p.xp);
+  document.getElementById("xpfill").style.width=((p.xp%600)/6)+"%";
+  document.getElementById("xptext").textContent=p.xp+" XP";
+  document.getElementById("streak").textContent="🔥 "+(p.streak.count||0);
+}
+document.getElementById("profile").addEventListener("change", e=>{ S.cur=e.target.value; save(); renderHeader(); renderLessons(); renderStats(); renderBests(); });
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click", ()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  document.getElementById("tab-"+b.dataset.tab).classList.add("active");
+  if(b.dataset.tab==="stats") renderStats();
+}));
+function toast(msg){
+  const d=document.createElement("div");
+  d.textContent=msg;
+  d.style.cssText="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,#22d3ee,#a78bfa);color:#06121f;font-weight:800;padding:12px 22px;border-radius:12px;z-index:99;box-shadow:0 8px 30px rgba(0,0,0,.5)";
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(), 2600);
+}
+
+/* ============ KEYBOARD ============ */
+function buildKeyboard(el, statsMode){
+  el.innerHTML="";
+  KBROWS.forEach(row=>{
+    const r=document.createElement("div"); r.className="krow";
+    row.forEach(k=>{
+      const d=document.createElement("div");
+      d.className="key"+(k===" "?" space":(k.length>1?" wide":""));
+      d.dataset.k=k.toLowerCase();
+      if(k===" ") d.innerHTML="<span style='color:#5b6580'>space</span>";
+      else d.textContent=k;
+      const f=KEYFINGER[k.toLowerCase()];
+      if(f && !statsMode){ const dot=document.createElement("span"); dot.className="fdot"; dot.style.background=FINGERS[f].color; d.appendChild(dot); }
+      if(statsMode){
+        const ch=k.toLowerCase(); const ks=P().keys[ch];
+        if(ks && ks.hit+ks.miss>=5){
+          const acc=ks.hit/(ks.hit+ks.miss);
+          d.style.background=acc>=0.95?"rgba(74,222,128,.25)":acc>=0.85?"rgba(251,191,36,.25)":"rgba(248,113,113,.3)";
+          d.title=ch+": "+Math.round(acc*100)+"% ("+(ks.hit+ks.miss)+" keys)";
+        }
+      }
+      r.appendChild(d);
+    });
+    el.appendChild(r);
+  });
+}
+function highlightNext(ch){
+  document.querySelectorAll("#kbd .key").forEach(k=>k.classList.remove("next"));
+  if(!ch) return;
+  const low=ch.toLowerCase();
+  let key=low;
+  if(low===" ") key=" ";
+  const el=document.querySelector('#kbd .key[data-k="'+CSS.escape(key)+'"]');
+  if(el) el.classList.add("next");
+}
+
+/* ============ LESSONS ============ */
+function unlocked(i){ if(i===0) return true; return !!(P().lessons[LESSONS[i-1].id]||{}).passed; }
+function renderLessons(){
+  const g=document.getElementById("lessongrid"); g.innerHTML="";
+  LESSONS.forEach((L,i)=>{
+    const d=document.createElement("div");
+    const un=unlocked(i), rec=P().lessons[L.id]||{};
+    d.className="lesson"+(un?"":" locked");
+    d.innerHTML='<div class="num">LESSON '+L.n+'</div><h3>'+L.title+(rec.passed?' <span class="done">✓</span>':"")+'</h3><p>'+L.desc+'</p>'+
+      '<div class="meta">'+(rec.passed?("Best: "+rec.bestWpm+" WPM, "+Math.round(rec.bestAcc*100)+"%"):(un?"Ready":"🔒 Finish lesson "+(i)))+'</div>';
+    if(un) d.addEventListener("click", ()=>startLesson(i));
+    g.appendChild(d);
+  });
+}
+
+let run=null;
+function startLesson(i){
+  const L=LESSONS[i];
+  document.getElementById("lessongrid").style.display="none";
+  const r=document.getElementById("runner"); r.style.display="block";
+  document.getElementById("runtitle").textContent="Lesson "+L.n+": "+L.title;
+  document.getElementById("runtip").textContent=L.tip;
+  document.getElementById("results").style.display="none";
+  document.getElementById("btnretry").style.display="none";
+  document.getElementById("btnnext").style.display="none";
+  buildKeyboard(document.getElementById("kbd"), false);
+  run={lesson:L, idx:i, text:L.gen(), pos:0, marks:[], correct:0, strokes:0, errors:0, startT:null, done:false, t0:Date.now(), kind:"lesson"};
+  renderTarget();
+  document.getElementById("target").focus();
+  highlightNext(run.text[0]);
+}
+function renderTarget(){
+  const t=document.getElementById("target");
+  t.innerHTML="";
+  const txt=run.text;
+  for(let i=0;i<txt.length;i++){
+    const s=document.createElement("span");
+    s.textContent=txt[i];
+    s.className = i<run.pos ? (run.marks[i]?"ok":"err") : (i===run.pos?"cur":"todo");
+    t.appendChild(s);
+  }
+  const done=run.pos/txt.length*100;
+  document.getElementById("hudprog").textContent=Math.round(done)+"%";
+}
+function handleKey(e, onDone){
+  if(!run || run.done) return;
+  const k=e.key;
+  if(k==="Tab"||k==="Dead") { e.preventDefault(); return; }
+  if(k==="Backspace"){ e.preventDefault();
+    if(run.pos>0){ run.pos--; run.marks[run.pos]=null; renderTarget(); highlightNext(run.text[run.pos]); updateHud(); }
+    return;
+  }
+  if(k.length!==1) return;
+  if(k===" ") e.preventDefault();
+  if(!run.startT) run.startT=Date.now();
+  run.marks=run.marks||[];
+  const expected=run.text[run.pos];
+  const ok = k===expected;
+  run.marks[run.pos]=ok;
+  run.strokes++; if(ok) run.correct++; else run.errors++;
+  recordKey(expected, ok);
+  run.pos++;
+  if(run.pos>=run.text.length){ finishRun(onDone); return; }
+  renderTarget(); highlightNext(run.text[run.pos]); updateHud();
+}
+function updateHud(){
+  const mins=(Date.now()-run.startT)/60000;
+  const wpm=mins>0.01?Math.round((run.correct/5)/mins):0;
+  const acc=run.strokes?Math.round(run.correct/run.strokes*100):100;
+  document.getElementById("hudwpm").textContent=wpm;
+  document.getElementById("hudacc").textContent=acc+"%";
+}
+function finishRun(onDone){
+  run.done=true;
+  const secs=(Date.now()-run.startT)/1000;
+  const wpm=Math.round((run.correct/5)/(secs/60));
+  const acc=run.correct/run.strokes;
+  addMinutes(secs/60); touchDay();
+  highlightNext(null);
+  onDone({wpm, acc, secs});
+}
+document.addEventListener("keydown", e=>{
+  const rt=document.getElementById("tab-lessons").classList.contains("active");
+  const gt=document.getElementById("tab-games").classList.contains("active");
+  if(rt && document.getElementById("runner").style.display!=="none") handleKey(e, lessonDone);
+  else if(gt && sprint.active) handleSprintKey(e);
+  else if(gt && rain.active) handleRainKey(e);
+});
+document.getElementById("target").addEventListener("click", e=>e.currentTarget.focus());
+function lessonDone(res){
+  const L=run.lesson, pass=res.acc>=0.92;
+  const rec=P().lessons[L.id]||{};
+  const isBest=!rec.bestWpm || res.wpm>rec.bestWpm;
+  P().lessons[L.id]={passed:rec.passed||pass, bestWpm:Math.max(rec.bestWpm||0,res.wpm), bestAcc:Math.max(rec.bestAcc||0,res.acc)};
+  save();
+  const xpGain=Math.round(res.wpm*2*(pass?1.5:0.5)+res.acc*50);
+  addXP(xpGain);
+  const box=document.getElementById("results");
+  box.style.display="block";
+  box.className=pass?"pass":"fail";
+  box.innerHTML="<h4>"+(pass?"✅ Lesson passed!":"❌ Not quite, 92% needed to pass")+"</h4>"+
+    "<div class='hud'><span>WPM <b>"+res.wpm+"</b></span><span>Accuracy <b>"+Math.round(res.acc*100)+"%</b></span><span>XP <b>+"+xpGain+"</b></span>"+(isBest?"<span>🎉 <b>New best!</b></span>":"")+"</div>"+
+    (pass?"":"<div class='tip'>Slow down a little and watch the lit-up key. Accuracy first, speed later.</div>");
+  document.getElementById("btnretry").style.display="inline-block";
+  if(pass && run.idx>=0 && run.idx<LESSONS.length-1) document.getElementById("btnnext").style.display="inline-block";
+  renderLessons();
+}
+document.getElementById("btnquit").addEventListener("click", ()=>{
+  run=null;
+  document.getElementById("runner").style.display="none";
+  document.getElementById("lessongrid").style.display="grid";
+});
+document.getElementById("btnretry").addEventListener("click", ()=>{ if(run&&run.isDrill) startDrill(); else if(run) startLesson(run.idx); });
+document.getElementById("btnnext").addEventListener("click", ()=>startLesson(run.idx+1));
+
+/* ============ WORD RAIN ============ */
+let rain={active:false};
+const RAINSPEED={drizzle:{fall:5,spawn:2600}, rain:{fall:9,spawn:1800}, storm:{fall:15,spawn:1200}};
+document.querySelectorAll(".game .btn[data-speed]").forEach(b=>b.addEventListener("click", ()=>startRain(b.dataset.speed)));
+function startRain(speed){
+  stopAll();
+  document.getElementById("gamearea").style.display="block";
+  document.getElementById("sprintbox").style.display="none";
+  document.getElementById("rainbox").style.display="block";
+  document.getElementById("rainhud").style.display="flex";
+  document.getElementById("gameresults").innerHTML="";
+  const box=document.getElementById("rainbox"); box.innerHTML="";
+  rain={active:true, words:[], lives:3, score:0, correct:0, strokes:0, errors:0,
+        speed, cfg:RAINSPEED[speed], startT:Date.now(), t0:Date.now(), spawnT:0, last:Date.now()};
+  document.getElementById("rainscore").textContent="0";
+  document.getElementById("rainlives").textContent="❤❤❤";
+  touchDay();
+  rain.raf=requestAnimationFrame(rainLoop);
+}
+function rainLoop(){
+  if(!rain.active) return;
+  const now=Date.now(), dt=(now-rain.last)/100; rain.last=now;
+  const box=document.getElementById("rainbox");
+  if(now-rain.spawnT>rain.cfg.spawn && rain.words.length<7){
+    rain.spawnT=now;
+    const w=rnd(COMMON);
+    const el=document.createElement("div");
+    el.className="fword";
+    const x=8+Math.random()*(box.clientWidth-140);
+    el.style.left=x+"px"; el.style.top="-34px";
+    el.innerHTML=w;
+    box.appendChild(el);
+    rain.words.push({text:w, done:0, y:-34, el});
+  }
+  const dead=[];
+  rain.words.forEach(wd=>{
+    wd.y+=rain.cfg.fall*dt;
+    wd.el.style.top=wd.y+"px";
+    if(wd.y>300) dead.push(wd);
+  });
+  dead.forEach(wd=>{
+    wd.el.remove();
+    rain.words.splice(rain.words.indexOf(wd),1);
+    rain.lives--;
+    document.getElementById("rainlives").textContent="❤".repeat(Math.max(0,rain.lives))+"🤍".repeat(3-Math.max(0,rain.lives));
+    box.classList.add("flash"); setTimeout(()=>box.classList.remove("flash"),500);
+    if(rain.lives<=0) endRain();
+  });
+  if(rain.active) rain.raf=requestAnimationFrame(rainLoop);
+}
+function lowestWord(){
+  let best=null;
+  rain.words.forEach(w=>{ if(!best||w.y>best.y) best=w; });
+  return best;
+}
+function handleRainKey(e){
+  const k=e.key;
+  if(k.length!==1) return;
+  if(k===" ") e.preventDefault();
+  const w=lowestWord();
+  if(!w) return;
+  rain.strokes++;
+  if(k===w.text[w.done]){
+    w.done++; rain.correct++;
+    recordKey(w.text[w.done-1], true);
+    w.el.innerHTML='<span class="typed">'+w.text.slice(0,w.done)+"</span>"+w.text.slice(w.done);
+    if(w.done>=w.text.length){
+      w.el.remove();
+      rain.words.splice(rain.words.indexOf(w),1);
+      rain.score++;
+      document.getElementById("rainscore").textContent=rain.score;
+    }
+  } else {
+    rain.errors++;
+    recordKey(w.text[w.done]||w.text[0], false);
+    const box=document.getElementById("rainbox");
+    box.style.borderColor="var(--bad)";
+    setTimeout(()=>box.style.borderColor="",150);
+  }
+  const mins=(Date.now()-rain.startT)/60000;
+  document.getElementById("rainwpm").textContent=mins>0.01?Math.round((rain.correct/5)/mins):0;
+}
+function endRain(){
+  rain.active=false;
+  cancelAnimationFrame(rain.raf);
+  const secs=(Date.now()-rain.startT)/1000;
+  const wpm=Math.round((rain.correct/5)/(secs/60));
+  const acc=rain.strokes?rain.correct/rain.strokes:1;
+  addMinutes(secs/60);
+  const xpGain=rain.score*15+Math.round(wpm/2);
+  addXP(xpGain);
+  if(rain.score>(P().bestRain||0)){ P().bestRain=rain.score; save(); toast("🎉 New Word Rain best!"); }
+  save(); renderBests();
+  document.getElementById("gameresults").innerHTML=
+    "<div id='results' class='pass' style='display:block'><h4>⛈️ Storm over! Score: "+rain.score+" words</h4>"+
+    "<div class='hud'><span>WPM <b>"+wpm+"</b></span><span>Accuracy <b>"+Math.round(acc*100)+"%</b></span><span>XP <b>+"+xpGain+"</b></span></div></div>";
+}
+
+/* ============ 60-SECOND SPRINT ============ */
+let sprint={active:false};
+document.getElementById("btnsprint").addEventListener("click", ()=>{
+  stopAll();
+  document.getElementById("gamearea").style.display="block";
+  document.getElementById("rainbox").style.display="none";
+  document.getElementById("rainhud").style.display="none";
+  document.getElementById("sprintbox").style.display="block";
+  document.getElementById("gameresults").innerHTML="";
+  sprint={active:true, text:pickWords(COMMON,90), pos:0, marks:[], correct:0, strokes:0, startT:null, left:60};
+  renderSprint();
+  document.getElementById("sprinttarget").focus();
+  touchDay();
+  sprint.timer=setInterval(()=>{
+    sprint.left--;
+    document.getElementById("sprinttime").textContent=sprint.left;
+    if(sprint.left<=0) endSprint();
+  },1000);
+});
+function renderSprint(){
+  const t=document.getElementById("sprinttarget");
+  t.innerHTML="";
+  const txt=sprint.text;
+  for(let i=0;i<txt.length;i++){
+    const s=document.createElement("span");
+    s.textContent=txt[i];
+    s.className=i<sprint.pos?(sprint.marks[i]?"ok":"err"):(i===sprint.pos?"cur":"todo");
+    t.appendChild(s);
+  }
+  const mins=sprint.startT?(Date.now()-sprint.startT)/60000:0;
+  document.getElementById("sprintwpm").textContent=mins>0.005?Math.round((sprint.correct/5)/mins):0;
+  document.getElementById("sprintacc").textContent=(sprint.strokes?Math.round(sprint.correct/sprint.strokes*100):100)+"%";
+}
+function handleSprintKey(e){
+  const k=e.key;
+  if(k==="Tab"){e.preventDefault();return;}
+  if(k==="Backspace"){e.preventDefault(); if(sprint.pos>0){sprint.pos--; renderSprint();} return;}
+  if(k.length!==1) return;
+  if(k===" ") e.preventDefault();
+  if(!sprint.startT) sprint.startT=Date.now();
+  const ok=k===sprint.text[sprint.pos];
+  sprint.marks[sprint.pos]=ok;
+  sprint.strokes++; if(ok) sprint.correct++;
+  recordKey(sprint.text[sprint.pos], ok);
+  sprint.pos++;
+  if(sprint.pos>=sprint.text.length) sprint.text+=" "+pickWords(COMMON,30);
+  renderSprint();
+}
+function endSprint(){
+  if(!sprint.active) return;
+  sprint.active=false;
+  clearInterval(sprint.timer);
+  const secs=60-Math.max(0,sprint.left);
+  const wpm=Math.round((sprint.correct/5)/(secs/60));
+  const acc=sprint.strokes?sprint.correct/sprint.strokes:1;
+  addMinutes(secs/60);
+  const xpGain=Math.round(wpm*1.5+acc*40);
+  addXP(xpGain);
+  const prev=P().bestSprint;
+  if(!prev||wpm>prev.wpm){ P().bestSprint={wpm, acc:Math.round(acc*100)}; save(); toast("🎉 New sprint best: "+wpm+" WPM!"); }
+  save(); renderBests();
+  document.getElementById("gameresults").innerHTML=
+    "<div id='results' class='pass' style='display:block'><h4>⏱️ Sprint done: "+wpm+" WPM</h4>"+
+    "<div class='hud'><span>Accuracy <b>"+Math.round(acc*100)+"%</b></span><span>XP <b>+"+xpGain+"</b></span></div>"+
+    (acc<0.92?"<div class='tip'>Speed is fun, but accuracy is the skill. Try the lessons to clean it up.</div>":"<div class='tip'>Clean and fast. That is the combination.</div>")+"</div>";
+}
+
+/* ============ WEAK-KEY DRILL ============ */
+document.getElementById("btnweak").addEventListener("click", startDrill);
+function startDrill(){
+  const wk=weakKeys(8).filter(w=>w.acc<0.95);
+  let chars="asdfjkl;";
+  let note="Not enough data yet. Play a lesson or game first, then come back.";
+  if(wk.length>=3){
+    chars=wk.map(w=>w.ch).join("")+"asdfjkl;";
+    note="Built from your least accurate keys: "+wk.map(w=>w.ch+" ("+Math.round(w.acc*100)+"%)").join(", ");
+  }
+  document.querySelector('nav button[data-tab="lessons"]').click();
+  document.getElementById("lessongrid").style.display="none";
+  const r=document.getElementById("runner"); r.style.display="block";
+  document.getElementById("runtitle").textContent="★ Weak-Key Drill";
+  document.getElementById("runtip").textContent=note+" Accuracy to beat: 92%.";
+  document.getElementById("results").style.display="none";
+  document.getElementById("btnretry").style.display="none";
+  document.getElementById("btnnext").style.display="none";
+  buildKeyboard(document.getElementById("kbd"), false);
+  run={lesson:{id:"weakdrill", n:"★", title:"Weak-Key Drill"}, idx:-1, isDrill:true,
+       text:drillText(chars,110), pos:0, marks:[], correct:0, strokes:0, errors:0,
+       startT:null, done:false, t0:Date.now(), kind:"drill"};
+  renderTarget();
+  document.getElementById("target").focus();
+  highlightNext(run.text[0]);
+  toast("🎯 Custom drill built from your misses");
+}
+
+/* ============ GAME AREA CONTROLS ============ */
+function stopAll(){
+  if(rain.active){ rain.active=false; cancelAnimationFrame(rain.raf); }
+  if(sprint.active){ sprint.active=false; clearInterval(sprint.timer); }
+  run=null;
+}
+document.getElementById("btngamequit").addEventListener("click", ()=>{
+  stopAll();
+  document.getElementById("gamearea").style.display="none";
+  document.getElementById("gameresults").innerHTML="";
+});
+function renderBests(){
+  document.getElementById("bestrain").textContent=P().bestRain?("Your best: "+P().bestRain+" words"):"No storms weathered yet.";
+  const bs=P().bestSprint;
+  document.getElementById("bestsprint").textContent=bs?("Your best: "+bs.wpm+" WPM at "+bs.acc+"%"):"No sprints yet.";
+}
+
+/* ============ STATS ============ */
+function renderStats(){
+  const p=P();
+  const done=LESSONS.filter(L=>(p.lessons[L.id]||{}).passed).length;
+  const t=todayStr();
+  const mins=p.days[t]||0;
+  const totalMin=Object.values(p.days).reduce((a,b)=>a+b,0);
+  const cells=[
+    [rankFor(p.xp),"Rank"],[p.xp+" XP","Experience"],
+    ["🔥 "+(p.streak.count||0),"Day streak"],[mins+" min","Practice today"],
+    [done+" / "+LESSONS.length,"Lessons passed"],
+    [Math.round(totalMin)+" min","Total practice"],
+    [p.bestSprint?p.bestSprint.wpm+" WPM":"--","Best sprint"],
+    [p.bestRain||"--","Best rain score"]
+  ];
+  const g=document.getElementById("statgrid"); g.innerHTML="";
+  cells.forEach(c=>{
+    const d=document.createElement("div"); d.className="stat";
+    d.innerHTML='<div class="v">'+c[0]+'</div><div class="l">'+c[1]+'</div>';
+    g.appendChild(d);
+  });
+  const wk=weakKeys(5).filter(w=>w.acc<0.95), wkel=document.getElementById("weakkeys"); wkel.innerHTML="";
+  if(!wk.length) wkel.innerHTML="<span style='color:var(--dim)'>Type a bit first and I will find them.</span>";
+  wk.forEach(w=>{ const d=document.createElement("div"); d.className="wkey"; d.textContent=w.ch+" "+Math.round(w.acc*100)+"%"; wkel.appendChild(d); });
+  buildKeyboard(document.getElementById("kbdstats"), true);
+}
+
+/* ============ INIT ============ */
+document.getElementById("sprinttarget").addEventListener("click", e=>e.currentTarget.focus());
+renderHeader(); renderLessons(); renderBests();
+</script>
+</body>
+</html>
